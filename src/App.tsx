@@ -1,10 +1,10 @@
 import { client } from "apis";
-import { AxiosError } from "axios";
+import { getTodos } from "apis/fetcher";
 import CountIndicator from "components/CountIndicator";
 import Todo from "components/Todo";
 import TodoInput from "components/TodoInput";
-import { useState } from "react";
-import { useEffect } from "react";
+import useSisyphe from "hooks/useSisyphe";
+import { useQuery } from "react-query";
 
 export interface TodoType {
   id: number;
@@ -13,25 +13,19 @@ export interface TodoType {
 }
 
 function App() {
-  const [todos, setTodos] = useState<TodoType[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<AxiosError | null>(null);
+  const {
+    data: todos,
+    isLoading,
+    error,
+  } = useSisyphe<TodoType[]>("todo", () => getTodos("123"));
+  // } = useSisyphe<TodoType[]>("todo", () => getTodos("abc"));
+  // } = useSisyphe<TodoType[]>("todo", async () => await getTodos("abc"));
 
-  useEffect(() => {
-    setIsLoading(true);
-    (async () => {
-      try {
-        const response = await client.get<TodoType[]>("/todos");
-        setTodos(response.data);
-      } catch (e) {
-        if (e instanceof AxiosError) {
-          setError(e);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    })();
-  }, []);
+  // const {
+  //   data: todos,
+  //   isLoading,
+  //   error,
+  // } = useQuery<TodoType[]>("todo", getTodos, { staleTime: 500 });
 
   const handleAddTodo = async (title: string) => {
     try {
@@ -44,12 +38,8 @@ function App() {
 
       await client.post(`/todos`, newTodo);
 
-      setTodos((todos) => [...todos, newTodo]);
-    } catch (e) {
-      if (e instanceof AxiosError) {
-        setError(e);
-      }
-    }
+      // setTodos((todos) => [...todos, newTodo]);
+    } catch (e) {}
   };
 
   const handleCheckTodo = async (id: number) => {
@@ -65,12 +55,8 @@ function App() {
         if (todo.id === id) return newTodo;
         return todo;
       });
-      setTodos(newTodos);
-    } catch (e) {
-      if (e instanceof AxiosError) {
-        setError(e);
-      }
-    }
+      // setTodos(newTodos);
+    } catch (e) {}
   };
 
   const handleDeleteTodo = async (id: number) => {
@@ -81,12 +67,8 @@ function App() {
       await client.delete(`/todos/${id}`);
 
       const newTodos = todos.filter((todo) => todo.id !== id);
-      setTodos(newTodos);
-    } catch (e) {
-      if (e instanceof AxiosError) {
-        setError(e);
-      }
-    }
+      // setTodos(newTodos);
+    } catch (e) {}
   };
 
   if (isLoading) return <>...Loading</>;
@@ -94,7 +76,7 @@ function App() {
 
   return (
     <>
-      {todos.map((todo) => (
+      {todos?.map((todo) => (
         <Todo
           key={todo.id}
           todo={todo}
@@ -104,7 +86,7 @@ function App() {
       ))}
       <TodoInput handleAddTodo={handleAddTodo} />
       <CountIndicator
-        completedCount={todos.filter((todo) => todo.completed).length}
+        completedCount={todos?.filter((todo) => todo.completed).length}
       />
     </>
   );
